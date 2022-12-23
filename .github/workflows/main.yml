@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [windows-latest, ubuntu-20.04]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 360
     steps:
@@ -82,18 +82,19 @@ jobs:
           APPBUNDLEID: "io.kontena.lens-app"
           APPLEID: ${{ secrets.APPLEID }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
-          CSC_LINK: ${{ runner.os == 'macos' && secrets.CSC_LINK || secrets.CSC_LINK_WIN }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'macos' && secrets.CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD_WIN}}
-          CSC_LINK_WIN: ${{ secrets.CSC_LINK_WIN }}
-          CSC_KEY_PASSWORD_WIN: ${{ secrets.CSC_KEY_PASSWORD_WIN }}
-          WIN_CSC_LINK: ${{ secrets.CSC_LINK_WIN }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD_WIN }}
-          CSC_FOR_PULL_REQUEST: true
+
+            #CSC_LINK: ${{ runner.os == 'macos' && secrets.CSC_LINK || secrets.CSC_LINK_WIN }}
+            #CSC_KEY_PASSWORD: ${{ runner.os == 'macos' && secrets.CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD_WIN}}
+            #CSC_LINK_WIN: ${{ secrets.CSC_LINK_WIN }}
+            #CSC_KEY_PASSWORD_WIN: ${{ secrets.CSC_KEY_PASSWORD_WIN }}
+            #WIN_CSC_LINK: ${{ secrets.CSC_LINK_WIN }}
+            #WIN_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD_WIN }}
+            #CSC_FOR_PULL_REQUEST: true
 
       - name: Calculate SHA256 checksum
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            certutil -hashfile OpenLens-${{ env.LENS_VERSION }}.exe SHA256 | tee OpenLens-${{ env.LENS_VERSION }}.exe.sha256
+            : certutil -hashfile OpenLens-${{ env.LENS_VERSION }}.exe SHA256 | tee OpenLens-${{ env.LENS_VERSION }}.exe.sha256
           else
             for filename in OpenLens-${{ env.LENS_VERSION }}*; do shasum -a 256 ${filename} | tee ${filename}.sha256 ; done
           fi
@@ -101,7 +102,7 @@ jobs:
         working-directory: lens/dist
 
       - uses: actions/upload-artifact@v3
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/develop'
         with:
           name: OpenLens-${{ matrix.os }}
           retention-days: 5
@@ -118,7 +119,7 @@ jobs:
         run: curl -s https://api.github.com/repos/lensapp/lens/releases/latest | jq -r 'select(.prerelease == false) | .body[0:]' > ${{ github.workspace }}-CHANGELOG.txt
       - name: Release
         uses: softprops/action-gh-release@v0.1.14
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop'
         with:
           tag_name: v${{ env.LENS_VERSION }}
           body_path: ${{ github.workspace }}-CHANGELOG.txt
@@ -132,7 +133,7 @@ jobs:
             lens/dist/OpenLens-${{ env.LENS_VERSION }}*.sha256
       - name: Latest
         uses: softprops/action-gh-release@v0.1.14
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/develop'
         with:
           tag_name: Latest
           files: | 
